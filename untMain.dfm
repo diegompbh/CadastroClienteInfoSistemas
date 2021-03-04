@@ -118,7 +118,7 @@ object frmMain: TfrmMain
     Top = 12
     Width = 569
     Height = 110
-    Caption = 'Endere'#231'o'
+    Caption = 'Dados do Cliente'
     TabOrder = 0
     object edtNome: TLabeledEdit
       Left = 11

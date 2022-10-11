@@ -39,8 +39,8 @@ type
   private
     { Private declarations }
     procedure GetDadosCEP;
-    procedure EnviarEmail;
     procedure ConfigurarCamposGrid;
+    function EnviarEmail: Boolean;
     function SalvarDados: Boolean;
     function ValidarCampos: Boolean;
     function ValidarCPF(CPF: string): Boolean;
@@ -60,7 +60,22 @@ uses ReaderCepAPI, EmailSender;
 
 procedure TfrmMain.btnEnviarEmailClick(Sender: TObject);
 begin
-   EnviarEmail;
+   if cdsCliente.IsEmpty then
+   begin
+      MessageDlg('Nenhum cliente cadastrado para envio de email', mtWarning, [mbOk], 0);
+      Abort;
+   end;
+
+   if MessageDlg('Deseja enviar email para o cliente ' + cdsCliente.FieldByName('nome').AsString + '?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+   begin
+      try
+         if EnviarEmail then
+            MessageDlg('Email enviado com sucesso!', mtInformation, [mbOk], 0);
+      except
+         on e: Exception do
+            MessageDlg(e.Message, mtError, [mbOk], 0);
+      end;
+   end;
 end;
 
 procedure TfrmMain.cdsClienteAfterOpen(DataSet: TDataSet);
@@ -83,7 +98,14 @@ begin
    if SalvarDados then
    begin
       MessageDlg('Cliente cadastrado com sucesso!', mtInformation, [mbOk], 0);
-      EnviarEmail;
+
+      try
+         if EnviarEmail then
+            MessageDlg('Email enviado com sucesso!', mtInformation, [mbOk], 0);
+      except
+         on e: Exception do
+            MessageDlg(e.Message, mtError, [mbOk], 0);
+      end;
    end;
 end;
 
@@ -94,29 +116,17 @@ begin
 end;
 
 // Envia email para o registro selecionado no grid.
-procedure TfrmMain.EnviarEmail;
+function TfrmMain.EnviarEmail: Boolean;
 var
    emailSender: TEmailSender;
 begin
-   if cdsCliente.IsEmpty then
-   begin
-      MessageDlg('Nenhum cliente cadastrado para envio de email', mtWarning, [mbOk], 0);
-      Abort;
-   end;
-
-   if MessageDlg('Deseja enviar email para o cliente ' + cdsCliente.FieldByName('nome').AsString + '?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
-   begin
+   try
       emailSender := TEmailSender.Create(cdsCliente);
-      try
-         if emailSender.EnviarEmail then
-            MessageDlg('Email enviado com sucesso!', mtInformation, [mbOk], 0)
-         else
-            raise Exception.Create('Erro ao enviar email para o cliente' + cdsCliente.FieldByName('nome').AsString + '.');
-      except
-         on e: Exception do
-            MessageDlg(e.Message, mtError, [mbOk], 0);
-      end;
-
+      if emailSender.EnviarEmail then
+         Result := True
+      else
+         raise Exception.Create('Erro ao enviar email para o cliente' + cdsCliente.FieldByName('nome').AsString + '.');
+   finally
       FreeAndNil(emailSender);
    end;
 end;
